@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Ввод данных для водоснабжения</title>
+    <style>
+      canvas {
+        border: 1px solid #333;
+        display: block;
+        margin: 20px auto;
+      }
+      .form-container {
+        width: 80%;
+        margin: 20px auto;
+        text-align: center;
+      }
+      form {
+        margin-bottom: 20px;
+      }
+      input,
+      select,
+      button {
+        margin: 5px;
+        padding: 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1 style="text-align: center">Схема водоснабжения</h1>
+    <div class="form-container">
+      <form id="nodeForm">
+        <h2>Добавить узел</h2>
+        <input type="number" id="nodeId" placeholder="ID узла" required />
+        <input type="number" id="nodeX" placeholder="Координата X" required />
+        <input type="number" id="nodeY" placeholder="Координата Y" required />
+        <input
+          type="number"
+          id="nodeFlowRate"
+          placeholder="Расход м³/ч"
+          required
+        />
+        <button type="button" onclick="addNode()">Добавить узел</button>
+      </form>
+      <form id="sectionForm">
+        <h2>Добавить участок</h2>
+        <input type="number" id="sectionId" placeholder="ID участка" required />
+        <input
+          type="number"
+          id="startNode"
+          placeholder="Начальный узел"
+          required
+        />
+        <input
+          type="number"
+          id="endNode"
+          placeholder="Конечный узел"
+          required
+        />
+        <select id="sectionMaterial" required>
+          <option value="steel">Сталь</option>
+          <option value="polyethylene">Полиэтилен</option>
+        </select>
+        <select id="pipeSelect" required>
+          <option value="">Выберите трубу</option>
+        </select>
+        <select id="sectionDiameter" required>
+          <option value="100">100 мм</option>
+          <option value="150">150 мм</option>
+          <option value="200">200 мм</option>
+          <option value="50">50 мм</option>
+          <option value="75">75 мм</option>
+        </select>
+        <button type="button" onclick="addSection()">Добавить участок</button>
+       
+      </form>
+    </div>
+    <canvas id="waterSupplyCanvas" width="800" height="600"></canvas>
+    <div
+      id="results"
+      style="margin: 20px; padding: 15px; border: 1px solid #333"
+    >
+      <h2>Результаты вычислений</h2>
+      <p>Скорость потока: <span id="velocity"></span> м/с</p>
+      <p>Потери напора: <span id="head-loss"></span> м</p>
+      <p>Число Рейнольдса: <span id="reynolds"></span></p>
+      <p>Длина между участками: <span id="section-length"></span> м</p>
+    </div>
+
+    <script src="./script.js"></script>
+  </body>
+</html>

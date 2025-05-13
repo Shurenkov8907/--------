@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Расчет гидравлики</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <style> body { font-family: Arial, sans-serif; margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; background-color: #f0f8ff; } .form-container { background-color: #ffffff; padding: 30px; border-radius: 15px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); width: 500px; max-width: 800px; border: 3px solid #6a5acd; text-align: center; } h1 { color: #6a5acd; margin-bottom: 20px; } label { font-size: 16px; margin-bottom: 10px; display: block; color: #555; } input, select { width: 100%; padding: 12px; margin-bottom: 15px; border: 2px solid #6a5acd; border-radius: 5px; font-size: 16px; box-sizing: border-box; } button { width: 100%; padding: 12px; margin-top: 10px; background-color: #150df7; border: none; border-radius: 5px; color: white; font-size: 16px; cursor: pointer; transition: background-color 0.3s; } button:hover { background-color: #0d09c0; } #results { margin-top: 20px; background-color: #f9f9f9; padding: 15px; border-radius: 10px; border: 1px solid #ccc; text-align: center; width: 500px; font-size: 16px; color: #333; } #results p { margin: 10px 0; font-weight: bold; } </style>
+    <div class="form-container">
+        <h1>Гидравлический расчет</h1>
+        <form id="calculationForm">
+            <label for="diameter">Диаметр трубы (мм):</label>
+            <input type="number" id="diameter" required>
+
+            <label for="length">Длина трубы (м):</label>
+            <input type="number" id="length" required>
+
+            <label for="flow-rate">Расход воды (л/с):</label>
+            <input type="number" id="flow-rate" required>
+
+            <label for="material">Материал трубы:</label>
+            <select id="material">
+                <option value="steel">Сталь</option>
+                <option value="plastic">Пластик</option>
+            </select>
+
+            <button type="button" onclick="calculate()">Рассчитать</button>
+            <button type="button" onclick="clearForm()">Очистить форму</button>
+        </form>
+
+        <div id="results">
+            <h2>Результат:</h2>
+            <p>Скорость потока: <span id="velocity"></span> м/с</p>
+            <p>Потери напора: <span id="head-loss"></span> м</p>
+            <p>Число Рейнольдса: <span id="reynolds"></span></p>
+            <button type="button" onclick="saveResults()">Сохранить результаты</button>
+        </div>
+    </div>
+
+    <script>
+        function clearForm() {
+    document.getElementById('calculationForm').reset();
+    document.getElementById('velocity').innerText = "";
+    document.getElementById('head-loss').innerText = "";
+    document.getElementById('reynolds').innerText = "";
+    localStorage.removeItem('hydraulicResults');
+}
+
+function calculate() {
+    const diameter = parseFloat(document.getElementById('diameter').value);
+    const length = parseFloat(document.getElementById('length').value);
+    const flowRate = parseFloat(document.getElementById('flow-rate').value) / 1000; // Преобразуем в м³/с
+    const material = document.getElementById('material').value;
+
+    if (isNaN(diameter) || isNaN(length) || isNaN(flowRate) || diameter < 10 || diameter > 2000 || length <= 0 || flowRate <= 0) {
+        alert('Пожалуйста, введите корректные данные в указанных диапазонах!');
+        return;
+    }
+
+    const diameterMeters = diameter / 1000;
+    const velocity = (4 * flowRate) / (Math.PI * Math.pow(diameterMeters, 2));
+
+    const viscosity = 1.31e-6; // Кинематическая вязкость воды при 20 °C
+    const reynolds = (velocity * diameterMeters) / viscosity;
+
+    let roughness;
+    if (material === "steel") {
+        roughness = 0.00015; // Шероховатость стали
+    } else if (material === "plastic") {
+        roughness = 0.0000015; // Шероховатость пластика
+    } else {
+        alert('Некорректный материал!');
+        return;
+    }
+
+    // Итерационный расчет коэффициента сопротивления по формуле Коулбрука-Уайта
+    let lambda = 0.02; // Начальное приближение
+    let iterationCount = 0;
+    while (iterationCount < 100) {
+        const temp = -2 * Math.log10((roughness / (3.7 * diameterMeters)) + (2.51 / (reynolds * Math.sqrt(lambda))));
+        lambda = 1 / Math.pow(temp, 2);
+        iterationCount++;
+    }
+
+    const headLoss = (lambda * Math.pow(velocity, 2)) / (2 * 9.8) * (length / diameterMeters);
+
+    document.getElementById('velocity').innerText = velocity.toFixed(2);
+    document.getElementById('head-loss').innerText = headLoss.toFixed(2);
+    document.getElementById('reynolds').innerText = reynolds.toFixed(0);
+    saveResults();
+}
+
+function saveResults() {
+    const results = {
+        velocity: document.getElementById('velocity').innerText,
+        headLoss: document.getElementById('head-loss').innerText,
+        reynolds: document.getElementById('reynolds').innerText
+    };
+
+    localStorage.setItem('hydraulicResults', JSON.stringify(results));
+    alert('Результаты сохранены!');
+}
+
+function loadResults() {
+    const savedResults = localStorage.getItem('hydraulicResults');
+    if (savedResults) {
+        const results = JSON.parse(savedResults);
+        document.getElementById('velocity').innerText = results.velocity;
+        document.getElementById('head-loss').innerText = results.headLoss;
+        document.getElementById('reynolds').innerText = results.reynolds;
+    }
+}
+
+window.onload = loadResults;
+
+    </script>
+</body>
+</html>

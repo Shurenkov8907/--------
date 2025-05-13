@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Выбор параметров из JSON</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        select, button {
+            padding: 10px;
+            font-size: 16px;
+            margin: 10px 0;
+        }
+        .output {
+            margin-top: 20px;
+            font-size: 18px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Выбор параметров из JSON</h1>
+
+    <label for="designation">Обозначение в проекте:</label>
+    <select id="designation">
+        <option value="">Выберите значение</option>
+    </select>
+    <br>
+    <button onclick="showSelectedData()">Показать параметры</button>
+
+    <div class="output" id="output"></div>
+
+    <script>
+        
+        const jsonData = {
+            "Лист2": [
+                {
+                    "Тип трубопровода": "Труба по ГОСТ 3262-76",
+                    "Обозначение в проекте": "ПЭ 80 SDR 17,6 90 * 3,5",
+                    "Dвн - внутренний диаметр, расчетный м": 0.083
+                },
+                {
+                    "Тип трубопровода": "Труба по ГОСТ 3262-76",
+                    "Обозначение в проекте": "ПЭ 80 SDR 17,6 110 * 4,2",
+                    "Dвн - внутренний диаметр, расчетный м": 0.1016
+                },
+                {
+                    "Тип трубопровода": "Труба по ГОСТ 3262-76",
+                    "Обозначение в проекте": "ПЭ 80 SDR 17,6 125 * 4,8",
+                    "Dвн - внутренний диаметр, расчетный м": 0.1154
+                }
+               
+            ]
+        };
+
+        
+        let selectedInternalDiameter = null;
+
+       
+        function populateSelect() {
+            const select = document.getElementById('designation');
+            jsonData["Лист2"].forEach((item, index) => {
+                const option = document.createElement('option');
+                option.value = index; 
+                option.textContent = item["Обозначение в проекте"];
+                select.appendChild(option);
+            });
+        }
+
+        
+        function showSelectedData() {
+            const select = document.getElementById('designation');
+            const selectedIndex = select.value;
+
+            if (selectedIndex === "") {
+                alert('Пожалуйста, выберите значение из списка!');
+                return;
+            }
+
+           
+            const selectedItem = jsonData["Лист2"][selectedIndex];
+            selectedInternalDiameter = selectedItem["Dвн - внутренний диаметр, расчетный м"];
+
+            
+            document.getElementById('output').innerHTML = `
+                <strong>Тип трубопровода:</strong> ${selectedItem["Тип трубопровода"]} <br>
+                <strong>Обозначение:</strong> ${selectedItem["Обозначение в проекте"]} <br>
+                <strong>Dвн - внутренний диаметр, расчетный м:</strong> ${selectedInternalDiameter.toFixed(3)}
+            `;
+        }
+
+       
+        populateSelect();
+    </script>
+</body>
+</html>

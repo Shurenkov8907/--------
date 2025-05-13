@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ввод данных для водоснабжения</title>
+    <style>
+        canvas {
+            border: 1px solid #333;
+            display: block;
+            margin: 20px auto;
+        }
+        .form-container {
+            width: 80%;
+            margin: 20px auto;
+            text-align: center;
+        }
+        form {
+            margin-bottom: 20px;
+        }
+        input, select, button {
+            margin: 5px;
+            padding: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1 style="text-align: center;">Схема водоснабжения</h1>
+    <div class="form-container">
+        <form id="nodeForm">
+            <h2>Добавить узел</h2>
+            <input type="number" id="nodeId" placeholder="ID узла" required>
+            <input type="number" id="nodeX" placeholder="Координата X" required>
+            <input type="number" id="nodeY" placeholder="Координата Y" required>
+            <input type="number" id="nodeFlowRate" placeholder="Расход м³/ч" required>
+            <button type="button" onclick="addNode()">Добавить узел</button>
+        </form>
+        <form id="sectionForm">
+            <h2>Добавить участок</h2>
+            <input type="number" id="sectionId" placeholder="ID участка" required>
+            <input type="number" id="startNode" placeholder="Начальный узел" required>
+            <input type="number" id="endNode" placeholder="Конечный узел" required>
+            <select id="sectionMaterial" required>
+                <option value="steel">Сталь</option>
+                <option value="polyethylene">Полиэтилен</option>
+            </select>
+            <select id="sectionDiameter" required>
+                <option value="100">100 мм</option>
+                <option value="150">150 мм</option>
+                <option value="200">200 мм</option>
+                <option value="50">50 мм</option>
+                <option value="75">75 мм</option>
+            </select>
+            <button type="button" onclick="addSection()">Добавить участок</button>
+        </form>
+    </div>
+    <canvas id="waterSupplyCanvas" width="800" height="600"></canvas>
+    <script>
+        const canvas = document.getElementById('waterSupplyCanvas');
+        const ctx = canvas.getContext('2d');
+
+        
+        const nodes = [];
+        const sections = [];
+
+        
+        function addNode() {
+            const id = parseInt(document.getElementById('nodeId').value);
+            const x = parseInt(document.getElementById('nodeX').value);
+            const y = parseInt(document.getElementById('nodeY').value);
+            const flowRate = parseFloat(document.getElementById('nodeFlowRate').value);
+
+            if (nodes.some(node => node.id === id)) {
+                alert('Узел с этим ID уже существует!');
+                return;
+            }
+
+            nodes.push({ id, x, y, flowRate });
+            drawNetwork();
+        }
+
+        
+        function addSection() {
+            const id = parseInt(document.getElementById('sectionId').value);
+            const startNode = parseInt(document.getElementById('startNode').value);
+            const endNode = parseInt(document.getElementById('endNode').value);
+            const material = document.getElementById('sectionMaterial').value;
+            const diameter = parseInt(document.getElementById('sectionDiameter').value);
+
+            if (sections.some(section => section.id === id)) {
+                alert('Участок с этим ID уже существует!');
+                return;
+            }
+
+            if (!nodes.some(node => node.id === startNode) || !nodes.some(node => node.id === endNode)) {
+                alert('Один из узлов не существует!');
+                return;
+            }
+
+            sections.push({ id, startNode, endNode, material, diameter });
+            drawNetwork();
+        }
+
+        
+        function calculateLength(section) {
+            const startNode = nodes.find(node => node.id === section.startNode);
+            const endNode = nodes.find(node => node.id === section.endNode);
+            return Math.sqrt(Math.pow(endNode.x - startNode.x, 2) + Math.pow(endNode.y - startNode.y, 2)).toFixed(2);
+        }
+
+        
+        function drawNode(node) {
+            ctx.beginPath();
+            ctx.arc(node.x, node.y, 10, 0, 2 * Math.PI);
+            ctx.fillStyle = 'blue';
+            ctx.fill();
+            ctx.strokeStyle = 'black';
+            ctx.stroke();
+            ctx.font = '12px Arial';
+            ctx.fillStyle = 'black';
+            ctx.fillText(`Узел ${node.id}`, node.x + 15, node.y - 10);
+            ctx.fillText(`Расход: ${node.flowRate} м³/ч`, node.x + 15, node.y + 10);
+        }
+
+        
+        function drawSection(section) {
+            const startNode = nodes.find(node => node.id === section.startNode);
+            const endNode = nodes.find(node => node.id === section.endNode);
+            const length = calculateLength(section);
+
+            ctx.beginPath();
+            ctx.moveTo(startNode.x, startNode.y);
+            ctx.lineTo(endNode.x, endNode.y);
+            ctx.strokeStyle = section.material === 'steel' ? 'green' : 'orange';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+
+            const midX = (startNode.x + endNode.x) / 2;
+            const midY = (startNode.y + endNode.y) / 2;
+
+            ctx.font = '12px Arial';
+            ctx.fillStyle = 'black';
+            ctx.fillText(`Участок ${section.id}`, midX, midY - 10);
+            ctx.fillText(`Длина: ${length} м`, midX, midY + 10);
+            ctx.fillText(`Материал: ${section.material}`, midX, midY + 25);
+            ctx.fillText(`Диаметр: ${section.diameter} мм`, midX, midY + 40);
+        }
+
+        
+        function drawNetwork() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            sections.forEach(section => drawSection(section));
+            nodes.forEach(node => drawNode(node));
+        }
+    </script>
+</body>
+</html>

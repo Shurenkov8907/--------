@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Парсер Excel и экспорт JSON</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</head>
+<body>
+    <h1>Парсер Excel и преобразование в JSON</h1>
+    <input type="file" id="upload" accept=".xls,.xlsx">
+    <button id="downloadJson" disabled>Скачать JSON</button>
+    <pre id="output"></pre>
+
+    <script>
+        let jsonData = null; 
+
+        document.getElementById('upload').addEventListener('change', handleFile, false);
+        document.getElementById('downloadJson').addEventListener('click', downloadJson, false);
+
+        
+        function handleFile(event) {
+            const file = event.target.files[0];
+            const reader = new FileReader();
+
+            reader.onload = function (e) {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+
+                jsonData = {}; 
+
+                workbook.SheetNames.forEach(sheetName => {
+                    const worksheet = workbook.Sheets[sheetName];
+                    jsonData[sheetName] = XLSX.utils.sheet_to_json(worksheet); 
+                });
+
+                document.getElementById('output').textContent = JSON.stringify(jsonData, null, 2); 
+                document.getElementById('downloadJson').disabled = false; 
+            };
+
+            reader.readAsArrayBuffer(file); 
+        }
+
+       
+        function downloadJson() {
+            if (!jsonData) return;
+
+            const jsonString = JSON.stringify(jsonData, null, 2); 
+            const blob = new Blob([jsonString], { type: 'application/json' }); 
+            const url = URL.createObjectURL(blob); 
+
+            const a = document.createElement('a'); 
+            a.href = url;
+            a.download = 'excel_data.json'; 
+            a.click(); 
+            URL.revokeObjectURL(url);
+        }
+    </script>
+</body>
+</html>
