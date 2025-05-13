@@ -65,11 +65,8 @@ function calculateFrictionFactor(reynolds, diameterMeters, roughness) {
 }
 
 function calculate() {
-  const diameterMeters = parseFloat(
-    document.getElementById("sectionDiameter").value
-  );
   const flowRate =
-    parseFloat(document.getElementById("sectionFlowRate").value) / 1000;
+    parseFloat(document.getElementById("sectionFlowRate").value) / 1000; // кубометры в секунду
   const material = document.getElementById("sectionMaterial").value;
   const sectionId = parseInt(document.getElementById("sectionId").value);
   const section = sections.find((sec) => sec.id === sectionId);
@@ -79,7 +76,8 @@ function calculate() {
     return;
   }
 
-  const length = calculateLength(section);
+  const diameterMeters = section.diameter;
+  const length = parseFloat(calculateLength(section));
 
   if (
     isNaN(diameterMeters) ||
@@ -94,7 +92,7 @@ function calculate() {
     return;
   }
 
-  const viscosity = 1.31e-6;
+  const viscosity = 1.31e-6; // Вязкость для воды при 20°C (м²/с)
   const velocity = calculateVelocity(diameterMeters, flowRate);
   const reynolds = (velocity * diameterMeters) / viscosity;
 
@@ -107,17 +105,12 @@ function calculate() {
   }
 
   const lambda = calculateFrictionFactor(reynolds, diameterMeters, roughness);
-  const headLoss = calculateHeadLoss(
-    diameterMeters,
-    length,
-    flowRate,
-    lambda
-  );
+  const headLoss = calculateHeadLoss(diameterMeters, length, flowRate, lambda);
 
   document.getElementById("velocity").innerText = velocity.toFixed(2);
   document.getElementById("head-loss").innerText = headLoss.toFixed(2);
   document.getElementById("reynolds").innerText = reynolds.toFixed(0);
-  document.getElementById("section-length").innerText = length;
+  document.getElementById("section-length").innerText = length.toFixed(2);
 
   saveResults(velocity, headLoss, reynolds, length);
 }
@@ -236,6 +229,48 @@ function drawNetwork() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   sections.forEach(drawSection);
   nodes.forEach(drawNode);
+}
+
+function computeIncidenceMatrix() {
+  if (nodes.length === 0 || sections.length === 0) {
+    alert("Сначала добавьте узлы и участки!");
+    return;
+  }
+
+  const nodeIds = nodes.map((node) => node.id);
+  const sectionIds = sections.map((section) => section.id);
+
+  const matrix = nodeIds.map((nodeId) =>
+    sectionIds.map((sectionId) => {
+      const section = sections.find((s) => s.id === sectionId);
+      if (section.startNode === nodeId) return -1;
+      if (section.endNode === nodeId) return 1;
+      return 0;
+    })
+  );
+
+  const container = document.getElementById("matrixOutput");
+  if (!container) {
+    alert("Добавьте элемент с id='matrixOutput' в HTML.");
+    return;
+  }
+
+  let html = "<table border='1' style='border-collapse: collapse; text-align:center;'><tr><th>Узел / Участок</th>";
+  sectionIds.forEach((id) => {
+    html += `<th>${id}</th>`;
+  });
+  html += "</tr>";
+
+  matrix.forEach((row, i) => {
+    html += `<tr><td>${nodeIds[i]}</td>`;
+    row.forEach((val) => {
+      html += `<td>${val}</td>`;
+    });
+    html += "</tr>";
+  });
+
+  html += "</table>";
+  container.innerHTML = html;
 }
 
 window.onload = () => {

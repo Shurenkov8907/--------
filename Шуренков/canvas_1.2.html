@@ -65,17 +65,14 @@
           <option value="">Выберите трубу</option>
         </select>
         <select id="sectionDiameter" required>
-          <option value="100">100 мм</option>
-          <option value="150">150 мм</option>
-          <option value="200">200 мм</option>
-          <option value="50">50 мм</option>
-          <option value="75">75 мм</option>
+          <!-- Диаметры будут загружаться динамически -->
         </select>
         <button type="button" onclick="addSection()">Добавить участок</button>
-       
       </form>
     </div>
     <canvas id="waterSupplyCanvas" width="800" height="600"></canvas>
+    <button onclick="computeIncidenceMatrix()">Показать матрицу инцидентности</button>
+    <div id="matrixOutput" style="margin-top: 20px;"></div>
     <div
       id="results"
       style="margin: 20px; padding: 15px; border: 1px solid #333"
