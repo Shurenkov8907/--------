@@ -1,256 +1,309 @@
 <!DOCTYPE html>
 <html lang="ru">
-  <head>
+<head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Гидравлический расчет водоснабжения</title>
     <style>
-      body {
-        font-family: Arial, sans-serif;
-        margin: 0;
-        padding: 0;
-        background: #f5f5f5;
-        color: #333;
-      }
-      header {
-        background-color: #2c3e50;
-        color: white;
-        padding: 20px;
-        text-align: center;
-      }
-      .container {
-        max-width: 1200px;
-        margin: 0 auto;
-        padding: 20px;
-        display: grid;
-        grid-template-columns: 1fr 2fr;
-        gap: 20px;
-      }
-      .form-section {
-        background: white;
-        padding: 20px;
-        border-radius: 8px;
-        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-      }
-      h2 {
-        margin-top: 0;
-        color: #2c3e50;
-        border-bottom: 1px solid #eee;
-        padding-bottom: 10px;
-      }
-      .form-group {
-        margin-bottom: 15px;
-      }
-      label {
-        display: block;
-        margin-bottom: 5px;
-        font-weight: bold;
-      }
-      input,
-      select {
-        width: 100%;
-        padding: 8px;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-        box-sizing: border-box;
-      }
-      button {
-        background-color: #3498db;
-        color: white;
-        border: none;
-        padding: 10px 15px;
-        border-radius: 4px;
-        cursor: pointer;
-        font-size: 16px;
-        transition: background-color 0.3s;
-      }
-      button:hover {
-        background-color: #2980b9;
-      }
-      .canvas-container {
-        background: white;
-        padding: 20px;
-        border-radius: 8px;
-        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-      }
-      canvas {
-        border: 1px solid #ddd;
-        background: white;
-        width: 100%;
-      }
-      .results-section {
-        grid-column: 1 / -1;
-        background: white;
-        padding: 20px;
-        border-radius: 8px;
-        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-      }
-      table {
-        width: 100%;
-        border-collapse: collapse;
-        margin-top: 20px;
-      }
-      th,
-      td {
-        border: 1px solid #ddd;
-        padding: 8px;
-        text-align: left;
-      }
-      th {
-        background-color: #f2f2f2;
-      }
-      .detailed-solution {
-        display: none;
-        background: #f9f9f9;
-        padding: 15px;
-        border-radius: 4px;
-        margin-top: 20px;
-        border: 1px solid #eee;
-        max-height: 400px;
-        overflow-y: auto;
-        white-space: pre-wrap;
-        font-family: monospace;
-      }
-      .toggle-btn {
-        background-color: #95a5a6;
-      }
-      .toggle-btn:hover {
-        background-color: #7f8c8d;
-      }
-      .matrix-btn {
-        background-color: #27ae60;
-      }
-      .matrix-btn:hover {
-        background-color: #219653;
-      }
-      .matrix-table {
-        width: 100%;
-        overflow-x: auto;
-        margin-top: 20px;
-        border: 1px solid #ddd;
-      }
-      .matrix-table table {
-        min-width: 100%;
-      }
-      .matrix-cell {
-        min-width: 50px;
-        text-align: center;
-      }
-      .gauss-step {
-        background-color: #e6f7ff;
-      }
-      .pivot-cell {
-        background-color: #ffeb99;
-        font-weight: bold;
-      }
-      .zero-cell {
-        color: #999;
-      }
-      .matrix-header {
-        background-color: #f2f2f2;
-        font-weight: bold;
-        text-align: center;
-      }
-      .gauss-explanation {
-        font-size: 0.9em;
-        color: #666;
-        margin-top: 5px;
-      }
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: #f5f5f5;
+            color: #333;
+        }
+        header {
+            background-color: #2c3e50;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 20px;
+        }
+        .form-section {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        h2 {
+            margin-top: 0;
+            color: #2c3e50;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input,
+        select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        .canvas-container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        canvas {
+            border: 1px solid #ddd;
+            background: white;
+            width: 100%;
+        }
+        .results-section {
+            grid-column: 1 / -1;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        
+        /* Таблицы результатов */
+        .result-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        .result-table th,
+        .result-table td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: center;
+        }
+        .result-table th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+        }
+        .ok-row {
+            background-color: #e8f5e9;
+        }
+        .error-row {
+            background-color: #ffebee;
+        }
+        
+        /* Секции с таблицами */
+        .result-subsection {
+            margin-top: 30px;
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 5px;
+            border: 1px solid #eee;
+        }
+        
+        /* Подробное решение */
+        .detailed-solution {
+            display: none;
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 4px;
+            margin-top: 20px;
+            border: 1px solid #eee;
+            max-height: 400px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            font-family: monospace;
+        }
+        
+        /* Кнопки */
+        .toggle-btn {
+            background-color: #95a5a6;
+        }
+        .toggle-btn:hover {
+            background-color: #7f8c8d;
+        }
+        .matrix-btn {
+            background-color: #27ae60;
+        }
+        .matrix-btn:hover {
+            background-color: #219653;
+        }
+        
+        /* Матрица */
+        .matrix-table {
+            width: 100%;
+            overflow-x: auto;
+            margin-top: 20px;
+            border: 1px solid #ddd;
+        }
+        .matrix-table table {
+            min-width: 100%;
+        }
+        .matrix-cell {
+            min-width: 50px;
+            text-align: center;
+        }
+        .gauss-step {
+            background-color: #e6f7ff;
+        }
+        .pivot-cell {
+            background-color: #ffeb99;
+            font-weight: bold;
+        }
+        .zero-cell {
+            color: #999;
+        }
+        .matrix-header {
+            background-color: #f2f2f2;
+            font-weight: bold;
+            text-align: center;
+        }
+        .gauss-explanation {
+            font-size: 0.9em;
+            color: #666;
+            margin-top: 5px;
+        }
     </style>
-  </head>
-  <body>
+</head>
+<body>
     <header>
-      <h1>Гидравлический расчет системы водоснабжения</h1>
+        <h1>Гидравлический расчет системы водоснабжения</h1>
     </header>
 
     <div class="container">
-      <div class="form-section">
-        <h2>Добавление узлов</h2>
-        <div class="form-group">
-          <label for="nodeId">ID узла:</label>
-          <input type="number" id="nodeId" min="1" />
-        </div>
-        <div class="form-group">
-          <label for="nodeX">Координата X (м):</label>
-          <input type="number" id="nodeX" step="0.1" />
-        </div>
-        <div class="form-group">
-          <label for="nodeY">Координата Y (м):</label>
-          <input type="number" id="nodeY" step="0.1" />
-        </div>
-        <div class="form-group">
-          <label for="nodeFlow">Расход (л/с):</label>
-          <input type="number" id="nodeFlow" step="0.1" />
-        </div>
-        <button id="addNodeBtn">Добавить узел</button>
+        <div class="form-section">
+            <h2>Добавление узлов</h2>
+            <div class="form-group">
+                <label for="nodeId">ID узла:</label>
+                <input type="number" id="nodeId" min="1" />
+            </div>
+            <div class="form-group">
+                <label for="nodeX">Координата X (м):</label>
+                <input type="number" id="nodeX" step="0.1" />
+            </div>
+            <div class="form-group">
+                <label for="nodeY">Координата Y (м):</label>
+                <input type="number" id="nodeY" step="0.1" />
+            </div>
+            <div class="form-group">
+                <label for="nodeFlow">Расход (л/с):</label>
+                <input type="number" id="nodeFlow" step="0.1" />
+            </div>
+            <button id="addNodeBtn">Добавить узел</button>
 
-        <h2 style="margin-top: 30px">Добавление участков</h2>
-        <div class="form-group">
-          <label for="startNode">Начальный узел:</label>
-          <select id="startNode"></select>
-        </div>
-        <div class="form-group">
-          <label for="endNode">Конечный узел:</label>
-          <select id="endNode"></select>
-        </div>
-        <div class="form-group">
-          <label for="material">Материал трубы:</label>
-          <select id="material">
-            <option value="plastic">Пластик</option>
-            <option value="steel">Сталь</option>
-          </select>
-        </div>
-        <div class="form-group" id="diameterSection">
-          <label for="diameter">Диаметр трубы:</label>
-          <select id="diameter"></select>
-        </div>
-        <button id="addConnectionBtn">Добавить участок</button>
-      </div>
-
-      <div class="canvas-container">
-        <h2>Схема сети</h2>
-        <canvas id="networkCanvas" width="700" height="500"></canvas>
-        <div style="margin-top: 20px; text-align: center">
-          <button id="buildNetworkBtn">Обновить схему</button>
-        </div>
-      </div>
-
-      <div class="results-section">
-        <h2>Результаты расчета</h2>
-        <button id="solveMatrixBtn">Рассчитать систему</button>
-        <button id="showMatrixBtn" class="matrix-btn">Показать матрицу</button>
-        <button id="toggleDetailedSolutionBtn" class="toggle-btn">
-          Показать подробное решение
-        </button>
-
-        <div
-          id="matrixDisplay"
-          class="matrix-table"
-          style="display: none"
-        ></div>
-
-        <div id="solutionSection" style="margin-top: 20px">
-          <h3>Расходы по участкам</h3>
-          <table id="solutionTable">
-            <thead>
-              <tr>
-                <th>Участок</th>
-                <th>Расход (л/с)</th>
-                <th>Скорость (м/с)</th>
-                <th>Потери напора (м)</th>
-                <th>Число Рейнольдса</th>
-              </tr>
-            </thead>
-            <tbody></tbody>
-          </table>
-
-          <div id="correctionResults" style="margin-top: 30px"></div>
+            <h2 style="margin-top: 30px">Добавление участков</h2>
+            <div class="form-group">
+                <label for="startNode">Начальный узел:</label>
+                <select id="startNode"></select>
+            </div>
+            <div class="form-group">
+                <label for="endNode">Конечный узел:</label>
+                <select id="endNode"></select>
+            </div>
+            <div class="form-group">
+                <label for="material">Материал трубы:</label>
+                <select id="material">
+                    <option value="plastic">Пластик</option>
+                    <option value="steel">Сталь</option>
+                </select>
+            </div>
+            <div class="form-group" id="diameterSection">
+                <label for="diameter">Диаметр трубы:</label>
+                <select id="diameter"></select>
+            </div>
+            <button id="addConnectionBtn">Добавить участок</button>
         </div>
 
-        <div id="detailedSolution" class="detailed-solution"></div>
-      </div>
+        <div class="canvas-container">
+            <h2>Схема сети</h2>
+            <canvas id="networkCanvas" width="700" height="500"></canvas>
+            <div style="margin-top: 20px; text-align: center">
+                <button id="buildNetworkBtn">Обновить схему</button>
+            </div>
+        </div>
+
+        <div class="results-section">
+            <h2>Результаты расчета</h2>
+            <div style="margin-bottom: 20px;">
+                <button id="solveMatrixBtn">Рассчитать систему</button>
+                <button id="showMatrixBtn" class="matrix-btn">Показать матрицу</button>
+                <button id="toggleDetailedSolutionBtn" class="toggle-btn">
+                    Показать подробное решение
+                </button>
+            </div>
+
+            <div id="matrixDisplay" class="matrix-table" style="display: none"></div>
+
+            <div id="solutionSection">
+                <div class="result-subsection">
+                    <h3>Расходы по участкам</h3>
+                    <table id="solutionTable" class="result-table">
+                        <thead>
+                            <tr>
+                                <th>Участок</th>
+                                <th>Расход (л/с)</th>
+                                <th>Скорость (м/с)</th>
+                                <th>Потери напора (м)</th>
+                                <th>Число Рейнольдса</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+
+                <div class="result-subsection" id="residualsSection">
+                    <h3>Результаты проверки невязок</h3>
+                    <table id="residualsTable" class="result-table">
+                        <thead>
+                            <tr>
+                                <th>Контур</th>
+                                <th>Сумма потерь напора (м)</th>
+                                <th>Допустимая невязка (м)</th>
+                                <th>Соответствие</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+
+                <div class="result-subsection" id="pumpNodeSection">
+                    <h3>Расход насосной станции</h3>
+                    <table id="pumpNodeTable" class="result-table">
+                        <thead>
+                            <tr>
+                                <th>Узел</th>
+                                <th>Расчетный расход (л/с)</th>
+                                <th>Примечание</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+
+                <div id="correctionResults"></div>
+            </div>
+
+            <div id="detailedSolution" class="detailed-solution"></div>
+        </div>
     </div>
 
     <script src="script.js"></script>
-  </body>
+</body>
 </html>

@@ -361,20 +361,45 @@ function calculateHydraulics(pipe, flowRate) {
 
 // -------------------- Решение системы уравнений --------------------
 function solveSystem() {
-  // Перед расчетом обновляем расход насосной станции
-  calculatePumpNodeFlow();
-
+  // 0. Проверка входных данных
   if (nodes.length < 2 || pipes.length === 0) {
     alert("Добавьте минимум 2 узла и 1 соединение для расчёта.");
     return;
   }
 
   const logText = ["=== Начало расчета ==="];
-
-  // 1. Формируем матрицу системы уравнений
-  const matrix = [];
   gaussSteps = []; // Очищаем предыдущие шаги
 
+  // 1. Расчет расхода насосной станции (первого узла)
+  calculatePumpNodeFlow();
+  logText.push(`\nРасход насосной станции (Узел ${nodes[0].id}): ${nodes[0].flow.toFixed(4)} л/с`);
+
+  // 2. Формирование матрицы системы уравнений
+  const { matrix, cycles } = buildSystemMatrix();
+  logText.push("\nМатрица уравнений по узлам:", matrixToString(matrix));
+  
+  // 3. Решение системы методом Гаусса
+  const initialSolution = solveGauss(matrix, pipes.length);
+  if (!initialSolution) {
+    alert("Не удалось решить систему уравнений");
+    return;
+  }
+  logSolution(initialSolution, "Первичное решение (расходы по участкам)", logText);
+
+  // 4. Корректировка методом Кросса
+  logText.push("\n=== Корректировка по контурам ===");
+  const finalSolution = crossMethod(initialSolution, cycles, logText);
+
+  // 5. Вывод результатов
+  displayResults(initialSolution, finalSolution, logText);
+  outputLog(logText);
+}
+
+// Вспомогательные функции:
+
+function buildSystemMatrix() {
+  const matrix = [];
+  
   // Уравнения баланса расходов для каждого узла (кроме первого)
   for (let i = 1; i < nodes.length; i++) {
     const row = new Array(pipes.length).fill(0);
@@ -382,10 +407,10 @@ function solveSystem() {
 
     pipes.forEach((pipe, j) => {
       if (pipe.startNode.id === nodes[i].id) {
-        row[j] = -1; // Узел - начало участка
+        row[j] = -1;
         sumFlow -= nodes[i].flow;
       } else if (pipe.endNode.id === nodes[i].id) {
-        row[j] = 1; // Узел - конец участка
+        row[j] = 1;
         sumFlow += nodes[i].flow;
       }
     });
@@ -394,68 +419,47 @@ function solveSystem() {
     matrix.push(row);
   }
 
-  logText.push("\nМатрица уравнений по узлам:");
-  logText.push(matrixToString(matrix));
-
-  // 2. Находим контура (циклы) в сети
+  // Уравнения для контуров
   const cycles = findCycles();
-  logText.push("\nНайдено контуров: " + cycles.length);
-
-  // Добавляем уравнения для контуров
-  cycles.forEach((cycle) => {
+  cycles.forEach(cycle => {
     const row = new Array(pipes.length).fill(0);
-
     cycle.forEach((sign, pipeIdx) => {
-      if (sign !== 0) {
-        row[pipeIdx] = sign;
-      }
+      if (sign !== 0) row[pipeIdx] = sign;
     });
-
-    row.push(0); // Правая часть уравнения контура всегда 0
+    row.push(0);
     matrix.push(row);
-
-    logText.push(
-      `Контур: ${cycle
-        .map((s, i) => (s !== 0 ? `${s > 0 ? "+" : "-"}уч${i + 1}` : ""))
-        .filter(Boolean)
-        .join(" ")} = 0`
-    );
   });
 
-  logText.push("\nПолная матрица системы (узлы + контуры):");
-  logText.push(matrixToString(matrix));
-
   // Сохраняем матрицу для отображения
-  currentMatrix = {
-    matrix: matrix,
-    cycles: cycles,
-    nodes: nodes,
-    pipes: pipes,
-  };
+  currentMatrix = { matrix, cycles, nodes, pipes };
+  
+  return { matrix, cycles };
+}
 
-  // 3. Решаем систему методом Гаусса
-  const solution = solveGauss(matrix, pipes.length);
-
-  if (!solution) {
-    alert("Не удалось решить систему уравнений");
-    return;
-  }
-
-  logText.push("\nПервичное решение (расходы по участкам):");
+function logSolution(solution, title, logText) {
+  logText.push(`\n${title}:`);
   solution.forEach((q, i) => {
     logText.push(`Участок ${i + 1}: ${q.toFixed(4)} л/с`);
   });
+}
 
-  // 4. Корректировка методом Кросса
-  logText.push("\n=== Корректировка по контурам ===");
-  const correctedSolution = crossMethod(solution, cycles, logText);
+function outputLog(logText) {
+  const detailedSolution = document.getElementById("detailedSolution");
+  detailedSolution.innerHTML = logText.join("\n");
+  detailedSolution.style.display = "none";
+}
 
-  // 5. Вывод результатов
-  displayResults(solution, correctedSolution, logText);
+function calculatePumpNodeFlow() {
+  if (nodes.length < 2) return;
 
-  document.getElementById("detailedSolution").innerHTML =
-    logText.join("\n");
-  document.getElementById("detailedSolution").style.display = "none";
+  // Насосная станция - первый узел
+  const pumpNode = nodes[0];
+  
+  // Суммируем все положительные расходы в других узлах
+  const totalFlow = nodes.slice(1).reduce((sum, node) => sum + Math.max(0, node.flow), 0);
+  
+  // Устанавливаем отрицательный расход для насосной станции
+  pumpNode.flow = -totalFlow;
 }
 
 // Поиск циклов (контуров) в сети
@@ -672,140 +676,167 @@ function crossMethod(initialSolution, cycles, logText) {
   const solution = [...initialSolution];
   const maxIterations = 100;
   const tolerance = 0.5; // Допустимая невязка, м
+  const relaxation = 0.9; // Коэффициент релаксации (0 < relaxation < 1)
 
-  logText.push("\nНачало корректировки методом Кросса");
+  logText.push("\n=== Корректировка по контурам ===");
+  logText.push(`Допустимая невязка: ${tolerance} м`);
+  logText.push(`Коэффициент релаксации: ${relaxation}`);
 
   for (let iter = 0; iter < maxIterations; iter++) {
-    let maxDelta = 0;
+      let maxDelta = 0;
+      let isConverged = true;
 
-    cycles.forEach((cycle, cycleIndex) => {
-      let sumHeadLoss = 0;
-      let sumDerivative = 0;
+      logText.push(`\nИтерация ${iter + 1}:`);
 
-      logText.push(`\nКонтур ${cycleIndex + 1}, итерация ${iter + 1}:`);
+      cycles.forEach((cycle, cycleIndex) => {
+          let sumHeadLoss = 0;
+          let sumDerivative = 0;
 
-      // Вычисляем сумму потерь напора в контуре
-      cycle.forEach((sign, pipeIdx) => {
-        if (sign !== 0) {
-          const pipe = pipes[pipeIdx];
-          const q = solution[pipeIdx];
-          const hyd = calculateHydraulics(pipe, q);
-          const headLoss = parseFloat(hyd.headLoss) || 0;
+          logText.push(`\nКонтур ${cycleIndex + 1}:`);
 
-          sumHeadLoss += sign * headLoss;
-          logText.push(
-            `Уч.${pipeIdx + 1}: q=${q.toFixed(4)}, h=${headLoss.toFixed(
-              4
-            )}, знак=${sign}`
-          );
+          // Вычисляем сумму потерь напора в контуре с учетом знаков
+          cycle.forEach((sign, pipeIdx) => {
+              if (sign !== 0) {
+                  const pipe = pipes[pipeIdx];
+                  const q = solution[pipeIdx];
+                  const hyd = calculateHydraulics(pipe, q);
+                  const headLoss = parseFloat(hyd.headLoss) || 0;
 
-          // Вычисляем производную dh/dq = 2 * k * q
-          const k =
-            (hyd.lambda * pipe.length) /
-            ((2 *
-              9.81 *
-              Math.pow(hyd.diameter, 5) *
-              Math.pow(Math.PI, 2)) /
-              16);
-          sumDerivative += 2 * k * Math.abs(q);
-        }
+                  // Учитываем направление обхода контура (знак)
+                  const signedHeadLoss = sign * headLoss;
+                  sumHeadLoss += signedHeadLoss;
+
+                  logText.push(`Уч.${pipeIdx + 1}: q=${q.toFixed(4)} л/с, h=${headLoss.toFixed(4)} м, знак=${sign}, вклад=${signedHeadLoss.toFixed(4)} м`);
+
+                  // Вычисляем производную dh/dq = 2 * k * |q|
+                  const k = (hyd.lambda * pipe.length) / 
+                            (2 * 9.81 * Math.pow(hyd.diameter, 5) * 
+                            Math.pow(Math.PI, 2) / 16);
+                  sumDerivative += 2 * k * Math.abs(q);
+              }
+          });
+
+          logText.push(`Сумма потерь Δh: ${sumHeadLoss.toFixed(4)} м`);
+          logText.push(`Сумма производных: ${sumDerivative.toFixed(4)}`);
+
+          // Проверяем условие сходимости для данного контура
+          if (Math.abs(sumHeadLoss) > tolerance) {
+              isConverged = false;
+              const deltaQ = -sumHeadLoss / (2 * sumDerivative) * relaxation;
+              logText.push(`Дельта q: ${deltaQ.toFixed(6)} (с релаксацией ${relaxation})`);
+
+              // Применяем поправку к участкам контура с учетом знаков
+              cycle.forEach((sign, pipeIdx) => {
+                  if (sign !== 0) {
+                      solution[pipeIdx] += sign * deltaQ;
+                      maxDelta = Math.max(maxDelta, Math.abs(deltaQ));
+                  }
+              });
+          } else {
+              logText.push(`Контур ${cycleIndex + 1} сошелся (Δh = ${sumHeadLoss.toFixed(4)} м < ${tolerance} м)`);
+          }
       });
 
-      logText.push(`Сумма потерь: ${sumHeadLoss.toFixed(4)} м`);
+      // Выводим текущие расходы после итерации
+      logText.push("\nТекущие расходы после итерации:");
+      solution.forEach((q, i) => {
+          logText.push(`Участок ${i + 1}: ${q.toFixed(4)} л/с`);
+      });
 
-      // Если невязка превышает допуск, корректируем расходы
-      if (Math.abs(sumHeadLoss) > tolerance) {
-        const deltaQ = -sumHeadLoss / (2 * sumDerivative);
-        logText.push(`Дельта q: ${deltaQ.toFixed(6)}`);
-
-        // Применяем поправку к участкам контура
-        cycle.forEach((sign, pipeIdx) => {
-          if (sign !== 0) {
-            solution[pipeIdx] += sign * deltaQ;
-            maxDelta = Math.max(maxDelta, Math.abs(deltaQ));
-          }
-        });
+      // Проверка глобальной сходимости
+      if (isConverged) {
+          logText.push(`\nСходимость достигнута на итерации ${iter + 1}`);
+          break;
       }
-    });
 
-    // Проверка сходимости
-    if (maxDelta < 0.01) {
-      logText.push(`\nСходимость достигнута на итерации ${iter + 1}`);
-      break;
-    }
+      if (iter === maxIterations - 1) {
+          logText.push("\nДостигнуто максимальное количество итераций!");
+      }
   }
 
   return solution;
 }
-
 // Вывод результатов расчета
 function displayResults(initialSolution, correctedSolution, logText) {
   const solutionSection = document.getElementById("solutionSection");
-
-  // Таблица с первичным решением
+  
+  // Основная таблица с результатами
   const tbody = document.querySelector("#solutionTable tbody");
   tbody.innerHTML = "";
 
-  initialSolution.forEach((q, i) => {
+  correctedSolution.forEach((q, i) => {
     const pipe = pipes[i];
     const hyd = calculateHydraulics(pipe, q);
 
     const tr = document.createElement("tr");
     tr.innerHTML = `
-              <td>${pipe.startNode.id} → ${pipe.endNode.id} (${
-      pipe.pipeName
-    })</td>
-              <td>${q.toFixed(4)}</td>
-              <td>${hyd.velocity}</td>
-              <td>${hyd.headLoss}</td>
-              <td>${hyd.reynolds}</td>
-          `;
+      <td>${pipe.startNode.id} → ${pipe.endNode.id} (${pipe.pipeName})</td>
+      <td>${q.toFixed(4)}</td>
+      <td>${hyd.velocity}</td>
+      <td>${hyd.headLoss}</td>
+      <td>${hyd.reynolds}</td>
+    `;
     tbody.appendChild(tr);
   });
 
-  // Таблица с корректированным решением
-  const correctionDiv = document.getElementById("correctionResults");
-  correctionDiv.innerHTML = `
-          <h3>Скорректированные расходы</h3>
-          <table>
-              <thead>
-                  <tr>
-                      <th>Участок</th>
-                      <th>Расход (л/с)</th>
-                      <th>Скорость (м/с)</th>
-                      <th>Потери напора (м)</th>
-                  </tr>
-              </thead>
-              <tbody>
-                  ${correctedSolution
-                    .map((q, i) => {
-                      const pipe = pipes[i];
-                      const hyd = calculateHydraulics(pipe, q);
-                      return `
-                          <tr>
-                              <td>${pipe.startNode.id} → ${
-                        pipe.endNode.id
-                      } (${pipe.pipeName})</td>
-                              <td>${q.toFixed(4)}</td>
-                              <td>${hyd.velocity}</td>
-                              <td>${hyd.headLoss}</td>
-                          </tr>
-                      `;
-                    })
-                    .join("")}
-              </tbody>
-          </table>
-      `;
-
-  logText.push("\n=== Результаты расчета ===");
-  logText.push("Первичные и скорректированные расходы:");
-  initialSolution.forEach((q, i) => {
-    logText.push(
-      `Уч.${i + 1}: было ${q.toFixed(4)}, стало ${correctedSolution[
-        i
-      ].toFixed(4)} л/с`
-    );
+  // Таблица с невязками
+  const residualsTbody = document.querySelector("#residualsTable tbody");
+  residualsTbody.innerHTML = "";
+  
+  const tolerance = 0.5; // Допустимая невязка
+  currentMatrix.cycles.forEach((cycle, cycleIndex) => {
+    let sumHeadLoss = 0;
+    
+    cycle.forEach((sign, pipeIdx) => {
+      if (sign !== 0) {
+        const pipe = pipes[pipeIdx];
+        const q = correctedSolution[pipeIdx];
+        const hyd = calculateHydraulics(pipe, q);
+        sumHeadLoss += sign * parseFloat(hyd.headLoss);
+      }
+    });
+    
+    const isOk = Math.abs(sumHeadLoss) <= tolerance;
+    const status = isOk ? "Соответствует" : "Превышена";
+    const rowClass = isOk ? "ok-row" : "error-row";
+    
+    const tr = document.createElement("tr");
+    tr.className = rowClass;
+    tr.innerHTML = `
+      <td>Контур ${cycleIndex + 1}</td>
+      <td>${sumHeadLoss.toFixed(4)}</td>
+      <td>${tolerance.toFixed(2)}</td>
+      <td>${status}</td>
+    `;
+    residualsTbody.appendChild(tr);
+    
+    logText.push(`Контур ${cycleIndex + 1}: невязка = ${sumHeadLoss.toFixed(4)} м (${status})`);
   });
+
+  // Таблица с расходом насосной станции
+  const pumpTbody = document.querySelector("#pumpNodeTable tbody");
+  pumpTbody.innerHTML = "";
+  
+  if (nodes.length > 0) {
+    const pumpNode = nodes[0];
+    const totalFlow = nodes.slice(1).reduce((sum, node) => sum + node.flow, 0);
+    const calculatedFlow = -totalFlow;
+    
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>Узел ${pumpNode.id} (Насосная станция)</td>
+      <td>${calculatedFlow.toFixed(4)}</td>
+      <td>Расчет: -1 × (${nodes.slice(1).map(n => n.flow).join(" + ")}) = -${totalFlow.toFixed(4)}</td>
+    `;
+    pumpTbody.appendChild(tr);
+    
+    logText.push(`\nРасход насосной станции (Узел ${pumpNode.id}): ${calculatedFlow.toFixed(4)} л/с`);
+  }
+
+  // Показываем все секции
+  document.getElementById("residualsSection").style.display = "block";
+  document.getElementById("pumpNodeSection").style.display = "block";
+  solutionSection.style.display = "block";
 }
 
 // -------------------- Вспомогательные функции --------------------
