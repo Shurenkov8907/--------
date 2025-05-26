@@ -1,309 +1,621 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Гидравлический расчет водоснабжения</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Гидравлический расчет водопроводной сети</title>
     <style>
         body {
             font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-            background: #f5f5f5;
-            color: #333;
-        }
-        header {
-            background-color: #2c3e50;
-            color: white;
-            padding: 20px;
-            text-align: center;
+            margin: 20px;
+            line-height: 1.6;
         }
         .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
-            display: grid;
-            grid-template-columns: 1fr 2fr;
+            display: flex;
+            flex-wrap: wrap;
             gap: 20px;
         }
         .form-section {
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-        }
-        h2 {
-            margin-top: 0;
-            color: #2c3e50;
-            border-bottom: 1px solid #eee;
-            padding-bottom: 10px;
-        }
-        .form-group {
-            margin-bottom: 15px;
-        }
-        label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: bold;
-        }
-        input,
-        select {
-            width: 100%;
-            padding: 8px;
             border: 1px solid #ddd;
-            border-radius: 4px;
-            box-sizing: border-box;
-        }
-        button {
-            background-color: #3498db;
-            color: white;
-            border: none;
-            padding: 10px 15px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 16px;
-            transition: background-color 0.3s;
-        }
-        button:hover {
-            background-color: #2980b9;
-        }
-        .canvas-container {
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-        }
-        canvas {
-            border: 1px solid #ddd;
-            background: white;
-            width: 100%;
-        }
-        .results-section {
-            grid-column: 1 / -1;
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-        }
-        
-        /* Таблицы результатов */
-        .result-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 20px 0;
-        }
-        .result-table th,
-        .result-table td {
-            border: 1px solid #ddd;
-            padding: 10px;
-            text-align: center;
-        }
-        .result-table th {
-            background-color: #f2f2f2;
-            font-weight: bold;
-        }
-        .ok-row {
-            background-color: #e8f5e9;
-        }
-        .error-row {
-            background-color: #ffebee;
-        }
-        
-        /* Секции с таблицами */
-        .result-subsection {
-            margin-top: 30px;
-            background: #f9f9f9;
             padding: 15px;
             border-radius: 5px;
-            border: 1px solid #eee;
+            min-width: 300px;
         }
-        
-        /* Подробное решение */
-        .detailed-solution {
-            display: none;
-            background: #f9f9f9;
-            padding: 15px;
-            border-radius: 4px;
+        canvas {
+            border: 1px solid #000;
             margin-top: 20px;
-            border: 1px solid #eee;
-            max-height: 400px;
-            overflow-y: auto;
-            white-space: pre-wrap;
-            font-family: monospace;
         }
-        
-        /* Кнопки */
-        .toggle-btn {
-            background-color: #95a5a6;
-        }
-        .toggle-btn:hover {
-            background-color: #7f8c8d;
-        }
-        .matrix-btn {
-            background-color: #27ae60;
-        }
-        .matrix-btn:hover {
-            background-color: #219653;
-        }
-        
-        /* Матрица */
-        .matrix-table {
+        table {
+            border-collapse: collapse;
             width: 100%;
-            overflow-x: auto;
             margin-top: 20px;
+        }
+        th, td {
             border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
         }
-        .matrix-table table {
-            min-width: 100%;
-        }
-        .matrix-cell {
-            min-width: 50px;
-            text-align: center;
-        }
-        .gauss-step {
-            background-color: #e6f7ff;
-        }
-        .pivot-cell {
-            background-color: #ffeb99;
-            font-weight: bold;
-        }
-        .zero-cell {
-            color: #999;
-        }
-        .matrix-header {
+        th {
             background-color: #f2f2f2;
-            font-weight: bold;
-            text-align: center;
         }
-        .gauss-explanation {
-            font-size: 0.9em;
-            color: #666;
-            margin-top: 5px;
+        button {
+            padding: 8px 15px;
+            margin: 5px 0;
+            cursor: pointer;
+        }
+        input, select {
+            padding: 5px;
+            margin: 5px 0;
+            width: 100%;
+        }
+        .results {
+            margin-top: 20px;
         }
     </style>
 </head>
 <body>
-    <header>
-        <h1>Гидравлический расчет системы водоснабжения</h1>
-    </header>
-
+    <h1>Гидравлический расчет водопроводной сети</h1>
+    
     <div class="container">
         <div class="form-section">
-            <h2>Добавление узлов</h2>
-            <div class="form-group">
-                <label for="nodeId">ID узла:</label>
-                <input type="number" id="nodeId" min="1" />
-            </div>
-            <div class="form-group">
-                <label for="nodeX">Координата X (м):</label>
-                <input type="number" id="nodeX" step="0.1" />
-            </div>
-            <div class="form-group">
-                <label for="nodeY">Координата Y (м):</label>
-                <input type="number" id="nodeY" step="0.1" />
-            </div>
-            <div class="form-group">
-                <label for="nodeFlow">Расход (л/с):</label>
-                <input type="number" id="nodeFlow" step="0.1" />
-            </div>
-            <button id="addNodeBtn">Добавить узел</button>
-
-            <h2 style="margin-top: 30px">Добавление участков</h2>
-            <div class="form-group">
-                <label for="startNode">Начальный узел:</label>
-                <select id="startNode"></select>
-            </div>
-            <div class="form-group">
-                <label for="endNode">Конечный узел:</label>
-                <select id="endNode"></select>
-            </div>
-            <div class="form-group">
-                <label for="material">Материал трубы:</label>
-                <select id="material">
-                    <option value="plastic">Пластик</option>
+            <h2>Добавить узел</h2>
+            <form id="nodeForm">
+                <label>ID узла:</label>
+                <input type="number" id="nodeId" required>
+                
+                <label>Координата X:</label>
+                <input type="number" id="nodeX" required>
+                
+                <label>Координата Y:</label>
+                <input type="number" id="nodeY" required>
+                
+                <label>Расход (м³/ч):</label>
+                <input type="number" id="nodeFlowRate" step="0.1" required>
+                
+                <button type="button" onclick="addNode()">Добавить узел</button>
+            </form>
+        </div>
+        
+        <div class="form-section">
+            <h2>Добавить участок</h2>
+            <form id="sectionForm">
+                <label>ID участка:</label>
+                <input type="number" id="sectionId" required>
+                
+                <label>Начальный узел:</label>
+                <select id="startNode" required></select>
+                
+                <label>Конечный узел:</label>
+                <select id="endNode" required></select>
+                
+                <label>Материал:</label>
+                <select id="sectionMaterial" required>
                     <option value="steel">Сталь</option>
+                    <option value="polyethylene">Полиэтилен</option>
                 </select>
-            </div>
-            <div class="form-group" id="diameterSection">
-                <label for="diameter">Диаметр трубы:</label>
-                <select id="diameter"></select>
-            </div>
-            <button id="addConnectionBtn">Добавить участок</button>
+                
+                <label>Диаметр:</label>
+                <select id="sectionDiameter" required></select>
+                
+                <button type="button" onclick="addSection()">Добавить участок</button>
+            </form>
         </div>
-
-        <div class="canvas-container">
-            <h2>Схема сети</h2>
-            <canvas id="networkCanvas" width="700" height="500"></canvas>
-            <div style="margin-top: 20px; text-align: center">
-                <button id="buildNetworkBtn">Обновить схему</button>
+        
+        <div class="form-section">
+            <h2>Расчет участка</h2>
+            <label>Участок:</label>
+            <select id="calcSectionId"></select>
+            
+            <label>Расход (л/с):</label>
+            <input type="number" id="sectionFlowRate" step="0.1" required>
+            
+            <button type="button" onclick="calculate()">Рассчитать</button>
+            
+            <div class="results">
+                <p>Скорость: <span id="velocity">-</span> м/с</p>
+                <p>Потери напора: <span id="head-loss">-</span> м</p>
+                <p>Число Рейнольдса: <span id="reynolds">-</span></p>
+                <p>Длина участка: <span id="section-length">-</span> м</p>
             </div>
-        </div>
-
-        <div class="results-section">
-            <h2>Результаты расчета</h2>
-            <div style="margin-bottom: 20px;">
-                <button id="solveMatrixBtn">Рассчитать систему</button>
-                <button id="showMatrixBtn" class="matrix-btn">Показать матрицу</button>
-                <button id="toggleDetailedSolutionBtn" class="toggle-btn">
-                    Показать подробное решение
-                </button>
-            </div>
-
-            <div id="matrixDisplay" class="matrix-table" style="display: none"></div>
-
-            <div id="solutionSection">
-                <div class="result-subsection">
-                    <h3>Расходы по участкам</h3>
-                    <table id="solutionTable" class="result-table">
-                        <thead>
-                            <tr>
-                                <th>Участок</th>
-                                <th>Расход (л/с)</th>
-                                <th>Скорость (м/с)</th>
-                                <th>Потери напора (м)</th>
-                                <th>Число Рейнольдса</th>
-                            </tr>
-                        </thead>
-                        <tbody></tbody>
-                    </table>
-                </div>
-
-                <div class="result-subsection" id="residualsSection">
-                    <h3>Результаты проверки невязок</h3>
-                    <table id="residualsTable" class="result-table">
-                        <thead>
-                            <tr>
-                                <th>Контур</th>
-                                <th>Сумма потерь напора (м)</th>
-                                <th>Допустимая невязка (м)</th>
-                                <th>Соответствие</th>
-                            </tr>
-                        </thead>
-                        <tbody></tbody>
-                    </table>
-                </div>
-
-                <div class="result-subsection" id="pumpNodeSection">
-                    <h3>Расход насосной станции</h3>
-                    <table id="pumpNodeTable" class="result-table">
-                        <thead>
-                            <tr>
-                                <th>Узел</th>
-                                <th>Расчетный расход (л/с)</th>
-                                <th>Примечание</th>
-                            </tr>
-                        </thead>
-                        <tbody></tbody>
-                    </table>
-                </div>
-
-                <div id="correctionResults"></div>
-            </div>
-
-            <div id="detailedSolution" class="detailed-solution"></div>
         </div>
     </div>
+    
+    <button onclick="computeIncidenceMatrix()">Показать матрицу инцидентности</button>
+    <button onclick="solveSystem()">Рассчитать систему</button>
+    
+    <div id="matrixOutput"></div>
+    <div id="solutionResults"></div>
+    
+    <canvas id="waterSupplyCanvas" width="800" height="500"></canvas>
 
-    <script src="script.js"></script>
+    <script>
+        const canvas = document.getElementById("waterSupplyCanvas");
+        const ctx = canvas.getContext("2d");
+        
+        // Основные данные
+        const nodes = [];
+        const sections = [];
+        
+        // Инициализация при загрузке
+        window.onload = function() {
+            loadDiameters();
+            updateNodeSelects();
+            updateSectionSelects();
+            drawNetwork();
+        };
+        
+        // Загрузка диаметров труб из JSON
+        async function loadDiameters() {
+            try {
+                const response = await fetch("pipes.json");
+                if (!response.ok) throw new Error("Не удалось загрузить данные");
+                
+                const data = await response.json();
+                const select = document.getElementById("sectionDiameter");
+                select.innerHTML = "";
+                
+                data.forEach(item => {
+                    const diameterMeters = parseFloat(item["Dвн - внутренний диаметр, расчетный м"]);
+                    if (!isNaN(diameterMeters)) {
+                        const option = document.createElement("option");
+                        option.value = diameterMeters;
+                        option.textContent = item["Обозначение в проекте "].trim();
+                        select.appendChild(option);
+                    }
+                });
+            } catch (error) {
+                console.error("Ошибка загрузки диаметров:", error);
+                alert("Ошибка загрузки данных о диаметрах труб");
+            }
+        }
+        
+        // Обновление выпадающих списков узлов
+        function updateNodeSelects() {
+            const startNodeSelect = document.getElementById("startNode");
+            const endNodeSelect = document.getElementById("endNode");
+            
+            startNodeSelect.innerHTML = "";
+            endNodeSelect.innerHTML = "";
+            
+            nodes.forEach(node => {
+                const option1 = document.createElement("option");
+                option1.value = node.id;
+                option1.textContent = `Узел ${node.id}`;
+                
+                const option2 = document.createElement("option");
+                option2.value = node.id;
+                option2.textContent = `Узел ${node.id}`;
+                
+                startNodeSelect.appendChild(option1);
+                endNodeSelect.appendChild(option2);
+            });
+        }
+        
+        // Обновление выпадающих списков участков
+        function updateSectionSelects() {
+            const calcSectionSelect = document.getElementById("calcSectionId");
+            calcSectionSelect.innerHTML = "";
+            
+            sections.forEach(section => {
+                const option = document.createElement("option");
+                option.value = section.id;
+                option.textContent = `Участок ${section.id} (${section.startNode}→${section.endNode})`;
+                calcSectionSelect.appendChild(option);
+            });
+        }
+        
+        // Добавление узла
+        function addNode() {
+            const id = parseInt(document.getElementById("nodeId").value);
+            const x = parseInt(document.getElementById("nodeX").value);
+            const y = parseInt(document.getElementById("nodeY").value);
+            const flowRate = parseFloat(document.getElementById("nodeFlowRate").value);
+            
+            if (isNaN(id) || isNaN(x) || isNaN(y) || isNaN(flowRate)) {
+                alert("Пожалуйста, заполните все поля корректно");
+                return;
+            }
+            
+            if (nodes.some(node => node.id === id)) {
+                alert("Узел с таким ID уже существует");
+                return;
+            }
+            
+            nodes.push({ id, x, y, flowRate });
+            updateNodeSelects();
+            drawNetwork();
+            document.getElementById("nodeForm").reset();
+        }
+        
+        // Добавление участка
+        function addSection() {
+            const id = parseInt(document.getElementById("sectionId").value);
+            const startNode = parseInt(document.getElementById("startNode").value);
+            const endNode = parseInt(document.getElementById("endNode").value);
+            const material = document.getElementById("sectionMaterial").value;
+            const diameter = parseFloat(document.getElementById("sectionDiameter").value);
+            
+            if (isNaN(id) || isNaN(startNode) || isNaN(endNode) || isNaN(diameter)) {
+                alert("Пожалуйста, заполните все поля корректно");
+                return;
+            }
+            
+            if (sections.some(section => section.id === id)) {
+                alert("Участок с таким ID уже существует");
+                return;
+            }
+            
+            if (startNode === endNode) {
+                alert("Начальный и конечный узлы не могут совпадать");
+                return;
+            }
+            
+            sections.push({ id, startNode, endNode, material, diameter });
+            updateSectionSelects();
+            drawNetwork();
+            document.getElementById("sectionForm").reset();
+        }
+        
+        // Расчет гидравлических параметров участка
+        function calculate() {
+            const sectionId = parseInt(document.getElementById("calcSectionId").value);
+            const flowRate = parseFloat(document.getElementById("sectionFlowRate").value) / 1000; // л/с → м³/с
+            
+            if (isNaN(sectionId) || isNaN(flowRate)) {
+                alert("Пожалуйста, выберите участок и укажите расход");
+                return;
+            }
+            
+            const section = sections.find(sec => sec.id === sectionId);
+            if (!section) {
+                alert("Участок не найден");
+                return;
+            }
+            
+            const hydraulics = calculateSectionHydraulics(section, flowRate);
+            
+            document.getElementById("velocity").textContent = hydraulics.velocity;
+            document.getElementById("head-loss").textContent = hydraulics.headLoss;
+            document.getElementById("reynolds").textContent = hydraulics.reynolds;
+            document.getElementById("section-length").textContent = hydraulics.length;
+        }
+        
+        // Расчет гидравлики участка
+        function calculateSectionHydraulics(section, flowRate) {
+            const diameterMeters = section.diameter;
+            const length = calculateLength(section);
+            const material = section.material;
+            
+            // Расчет скорости
+            const velocity = (4 * flowRate) / (Math.PI * Math.pow(diameterMeters, 2));
+            
+            // Расчет числа Рейнольдса
+            const viscosity = 1.31e-6; // кинематическая вязкость воды при 10°C
+            const reynolds = (velocity * diameterMeters) / viscosity;
+            
+            // Шероховатость материала
+            let roughness;
+            switch (material.toLowerCase()) {
+                case "steel": roughness = 0.00015; break;
+                case "polyethylene": roughness = 0.0000015; break;
+                default: roughness = 0.00015;
+            }
+            
+            // Коэффициент гидравлического трения (формула Альтшуля)
+            let lambda;
+            if (reynolds < 2000) {
+                lambda = 64 / reynolds; // Ламинарный режим
+            } else {
+                // Турбулентный режим (формула Колбрука-Уайта)
+                const A = roughness / (3.7 * diameterMeters);
+                const B = 2.51 / (reynolds * Math.sqrt(0.02));
+                lambda = 1 / Math.pow(-2 * Math.log10(A + B), 2);
+                
+                // Уточнение методом итераций
+                for (let i = 0; i < 5; i++) {
+                    const newLambda = 1 / Math.pow(-2 * Math.log10(A + 2.51 / (reynolds * Math.sqrt(lambda))), 2);
+                    if (Math.abs(newLambda - lambda) < 0.0001) break;
+                    lambda = newLambda;
+                }
+            }
+            
+            // Потери напора
+            const headLoss = (lambda * length * Math.pow(velocity, 2)) / (2 * 9.81 * diameterMeters);
+            
+            return {
+                velocity: velocity.toFixed(4),
+                headLoss: headLoss.toFixed(4),
+                reynolds: Math.round(reynolds),
+                length: length.toFixed(2),
+                lambda: lambda.toFixed(6)
+            };
+        }
+        
+        // Расчет длины участка
+        function calculateLength(section) {
+            const startNode = nodes.find(node => node.id === section.startNode);
+            const endNode = nodes.find(node => node.id === section.endNode);
+            
+            if (!startNode || !endNode) return 0;
+            
+            return Math.sqrt(
+                Math.pow(endNode.x - startNode.x, 2) + 
+                Math.pow(endNode.y - startNode.y, 2)
+            );
+        }
+        
+        // Отрисовка сети
+        function drawNetwork() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Рисуем участки
+            sections.forEach(section => {
+                const startNode = nodes.find(node => node.id === section.startNode);
+                const endNode = nodes.find(node => node.id === section.endNode);
+                
+                if (startNode && endNode) {
+                    ctx.beginPath();
+                    ctx.moveTo(startNode.x, startNode.y);
+                    ctx.lineTo(endNode.x, endNode.y);
+                    ctx.strokeStyle = section.material === "steel" ? "green" : "orange";
+                    ctx.lineWidth = 3;
+                    ctx.stroke();
+                    
+                    // Подпись участка
+                    const midX = (startNode.x + endNode.x) / 2;
+                    const midY = (startNode.y + endNode.y) / 2;
+                    
+                    ctx.font = "12px Arial";
+                    ctx.fillStyle = "black";
+                    ctx.fillText(`Участок ${section.id}`, midX, midY - 10);
+                    ctx.fillText(`${(section.diameter * 1000).toFixed(0)} мм`, midX, midY + 10);
+                }
+            });
+            
+            // Рисуем узлы
+            nodes.forEach(node => {
+                ctx.beginPath();
+                ctx.arc(node.x, node.y, 10, 0, Math.PI * 2);
+                ctx.fillStyle = "blue";
+                ctx.fill();
+                ctx.strokeStyle = "black";
+                ctx.stroke();
+                
+                ctx.font = "12px Arial";
+                ctx.fillStyle = "black";
+                ctx.fillText(`Узел ${node.id}`, node.x + 15, node.y - 10);
+                ctx.fillText(`${node.flowRate} м³/ч`, node.x + 15, node.y + 10);
+            });
+        }
+        
+        // Построение матрицы инцидентности
+        function computeIncidenceMatrix() {
+            if (nodes.length === 0 || sections.length === 0) {
+                alert("Сначала добавьте узлы и участки");
+                return;
+            }
+            
+            const matrix = nodes.map(node => {
+                return sections.map(section => {
+                    if (section.startNode === node.id) return -1;
+                    if (section.endNode === node.id) return 1;
+                    return 0;
+                });
+            });
+            
+            // Отображение матрицы
+            const container = document.getElementById("matrixOutput");
+            container.innerHTML = "<h3>Матрица инцидентности</h3>";
+            
+            const table = document.createElement("table");
+            table.border = "1";
+            
+            // Заголовок с номерами участков
+            const headerRow = document.createElement("tr");
+            headerRow.innerHTML = "<th>Узел/Участок</th>" + 
+                sections.map(s => `<th>${s.id}</th>`).join("");
+            table.appendChild(headerRow);
+            
+            // Строки матрицы
+            nodes.forEach((node, i) => {
+                const row = document.createElement("tr");
+                row.innerHTML = `<td>Узел ${node.id}</td>` + 
+                    matrix[i].map(val => `<td>${val}</td>`).join("");
+                table.appendChild(row);
+            });
+            
+            container.appendChild(table);
+        }
+        
+        // Решение системы уравнений
+        function solveSystem() {
+            if (nodes.length < 2 || sections.length === 0) {
+                alert("Для расчета нужно минимум 2 узла и 1 участок");
+                return;
+            }
+            
+            // 1. Формируем матрицу системы уравнений
+            const numSections = sections.length;
+            let equations = [];
+            
+            // Уравнения баланса расходов (исключаем первый узел как базовый)
+            for (let i = 1; i < nodes.length; i++) {
+                let equation = new Array(numSections).fill(0);
+                
+                sections.forEach((section, j) => {
+                    if (section.startNode === nodes[i].id) equation[j] = -1;
+                    if (section.endNode === nodes[i].id) equation[j] = 1;
+                });
+                
+                // Правая часть уравнения (расход узла в м³/с)
+                equation.push(nodes[i].flowRate / 3600);
+                equations.push(equation);
+            }
+            
+            // Уравнения контуров (потери напора)
+            const cycles = findCycles();
+            cycles.forEach(cycle => {
+                let equation = new Array(numSections).fill(0);
+                
+                for (let i = 0; i < cycle.length; i++) {
+                    const node1 = cycle[i];
+                    const node2 = cycle[(i + 1) % cycle.length];
+                    
+                    sections.forEach((section, j) => {
+                        if (section.startNode === node1 && section.endNode === node2) {
+                            equation[j] = 1; // Совпадает с направлением обхода
+                        } else if (section.startNode === node2 && section.endNode === node1) {
+                            equation[j] = -1; // Против направления обхода
+                        }
+                    });
+                }
+                
+                equation.push(0); // Правая часть уравнения контура
+                equations.push(equation);
+            });
+            
+            // 2. Решаем систему методом Гаусса
+            const solution = gaussSolve(equations, numSections);
+            
+            if (!solution) {
+                alert("Не удалось решить систему уравнений");
+                return;
+            }
+            
+            // 3. Сохраняем расходы в участках
+            sections.forEach((section, i) => {
+                section.flowRate = solution[i];
+            });
+            
+            // 4. Выводим результаты
+            displayResults(solution);
+        }
+        
+        // Метод Гаусса для решения системы уравнений
+        function gaussSolve(mat, numVars) {
+            const numEq = mat.length;
+            
+            for (let col = 0; col < numVars; col++) {
+                // Поиск строки с максимальным элементом в текущем столбце
+                let maxRow = col;
+                for (let row = col + 1; row < numEq; row++) {
+                    if (Math.abs(mat[row][col]) > Math.abs(mat[maxRow][col])) {
+                        maxRow = row;
+                    }
+                }
+                
+                // Перестановка строк
+                [mat[col], mat[maxRow]] = [mat[maxRow], mat[col]];
+                
+                // Проверка на нулевой элемент (вырожденность)
+                if (Math.abs(mat[col][col]) < 1e-10) {
+                    console.error("Система вырождена");
+                    return null;
+                }
+                
+                // Нормализация текущей строки
+                const pivot = mat[col][col];
+                for (let j = col; j <= numVars; j++) {
+                    mat[col][j] /= pivot;
+                }
+                
+                // Исключение переменной из других строк
+                for (let i = 0; i < numEq; i++) {
+                    if (i !== col && Math.abs(mat[i][col]) > 1e-10) {
+                        const factor = mat[i][col];
+                        for (let j = col; j <= numVars; j++) {
+                            mat[i][j] -= factor * mat[col][j];
+                        }
+                    }
+                }
+            }
+            
+            // Извлечение решения
+            const solution = new Array(numVars);
+            for (let i = 0; i < numVars; i++) {
+                solution[i] = mat[i][numVars];
+            }
+            
+            return solution;
+        }
+        
+        // Поиск циклов в графе
+        function findCycles() {
+            // Простая реализация для примера (в реальном проекте нужен более сложный алгоритм)
+            // Возвращаем один цикл, если он есть
+            if (sections.length < 2) return [];
+            
+            // Проверяем, есть ли замкнутый контур из первых трех участков
+            const firstSection = sections[0];
+            let cycle = [];
+            
+            // Ищем участки, образующие цикл
+            const connectedSections = sections.filter(s => 
+                s.startNode === firstSection.startNode || 
+                s.endNode === firstSection.startNode ||
+                s.startNode === firstSection.endNode || 
+                s.endNode === firstSection.endNode
+            );
+            
+            if (connectedSections.length >= 2) {
+                const secondSection = connectedSections[1];
+                
+                // Проверяем, образуют ли они цикл
+                if (firstSection.startNode === secondSection.endNode || 
+                    firstSection.endNode === secondSection.startNode ||
+                    firstSection.startNode === secondSection.startNode ||
+                    firstSection.endNode === secondSection.endNode) {
+                    
+                    // Формируем цикл
+                    cycle = [
+                        firstSection.startNode,
+                        firstSection.endNode,
+                        secondSection.startNode === firstSection.endNode ? 
+                            secondSection.endNode : secondSection.startNode
+                    ];
+                    
+                    // Убедимся, что цикл замкнут
+                    if (cycle[0] === cycle[cycle.length - 1]) {
+                        return [cycle];
+                    }
+                }
+            }
+            
+            return [];
+        }
+        
+        // Отображение результатов расчета системы
+        function displayResults(solution) {
+            const resultsDiv = document.getElementById("solutionResults");
+            resultsDiv.innerHTML = `
+                <h3>Результаты расчета системы</h3>
+                <table class="results-table">
+                    <thead>
+                        <tr>
+                            <th>Участок</th>
+                            <th>Расход (л/с)</th>
+                            <th>Скорость (м/с)</th>
+                            <th>Потери напора (м)</th>
+                            <th>Число Рейнольдса</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${sections.map((section, i) => {
+                            const hydraulics = calculateSectionHydraulics(section, solution[i]);
+                            return `
+                                <tr>
+                                    <td>${section.id} (${section.startNode}→${section.endNode})</td>
+                                    <td>${(solution[i] * 1000).toFixed(4)}</td>
+                                    <td>${hydraulics.velocity}</td>
+                                    <td>${hydraulics.headLoss}</td>
+                                    <td>${hydraulics.reynolds}</td>
+                                </tr>
+                            `;
+                        }).join('')}
+                    </tbody>
+                </table>
+            `;
+        }
+    </script>
 </body>
 </html>
